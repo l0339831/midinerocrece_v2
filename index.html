@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSAT Dashboard – UX Research</title>
+  <!-- Librerías -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.0/dist/chartjs-chart-sankey.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  
+  <!-- Estilos (tokens + utilitarios + temas) -->
+  <style>
+    :root{
+      /* Paleta secuencial */
+      --c1:#003f5c; --c2:#2f4b7c; --c3:#665191; --c4:#a05195;
+      --c5:#d45087; --c6:#f95d6a; --c7:#ff7c43; --c8:#ffa600;
+      /* Neutros (Dark por defecto) */
+      --bg:#0f1115; --panel:#161922; --card:#1d2130; --muted:#8b92a7; --text:#e9eefb;
+      --kpi-bad:#ef4444; --kpi-ok:#14b8a6; --kpi-warn:#f59e0b;
+      --r:14px; --sp-1:6px; --sp-2:12px; --sp-3:20px; --sp-4:28px;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    /* Tema Light */
+    [data-theme="light"]{
+      --bg:#f6f7fb; --panel:#ffffff; --card:#ffffff; --muted:#5d6474; --text:#111827;
+      --shadow: 0 10px 18px rgba(0,0,0,.08);
+    }
+
+    *,*:before,*:after{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;background:linear-gradient(180deg,var(--bg),#0b0d12 60%);color:var(--text)}
+    [data-theme="light"] body{background:var(--bg)}
+    a{color:var(--c7)}
+    .container{max-width:1200px;margin:0 auto;padding:var(--sp-3)}
+
+    /* Topbar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .dot{width:12px;height:12px;border-radius:50%;background:var(--c7);box-shadow:0 0 0 6px color-mix(in lab, var(--c7) 20%, transparent)}
+    .brand h1{font-size:18px;margin:0}
+    .meta{font-size:13px;color:var(--muted)}
+
+    /* Actions (tema + recargar + dataset) */
+    .actions{display:flex;align-items:center;gap:10px}
+    .tbtn,.reload,.dataset{
+      appearance:none;border:none;cursor:pointer;padding:8px 12px;border-radius:999px;background:var(--card);color:var(--text);
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);display:flex;align-items:center;gap:8px;font-weight:600
+    }
+    select.dataset{cursor:pointer}
+    .tbtn:hover,.reload:hover,.dataset:hover{box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+    .reload[disabled]{opacity:.6;cursor:progress}
+    .ticon{width:18px;height:18px;display:inline-block}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:var(--card);padding:6px 10px;border-radius:999px;font-size:12px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+    .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--c3)}
+
+    /* Tabs */
+    .tabs{margin-top:var(--sp-3)}
+    .tablist{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{appearance:none;border:none;cursor:pointer;padding:10px 14px;border-radius:10px;background:var(--card);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:.2s ease; font-weight:600; letter-spacing:.2px}
+    .tab[aria-selected="true"], .tab:hover{background:linear-gradient(135deg,var(--c1),var(--c3));color:#fff}
+    .panels{margin-top:var(--sp-3)}
+    .panel{display:none;background:var(--card);border-radius:var(--r);padding:var(--sp-3);box-shadow:var(--shadow)}
+    .panel.active{display:block}
+
+    /* Layout util */
+    .grid{display:grid;gap:var(--sp-3)}
+    .grid.two{grid-template-columns:1fr;}
+    @media (min-width: 900px){.grid.two{grid-template-columns:1.2fr .8fr}}
+
+    .kpi{display:flex;gap:16px;align-items:center;background:var(--panel);padding:12px 14px;border-radius:12px}
+    .kpi .badge{width:10px;height:10px;border-radius:50%}
+    .kpi-title{font-size:12px;color:var(--muted);margin:0}
+    .kpi-value{margin:0;font-weight:800;font-size:24px}
+    .small{font-size:12px;color:var(--muted)}
+
+    canvas{max-width:100%;}
+    .note{margin-top:var(--sp-2);font-size:13px;color:var(--muted)}
+    .status{margin-top:6px;font-size:12px}
+    .status.ok{color:#14b8a6}
+    .status.warn{color:#f59e0b}
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="dot"></div>
+        <h1>CSAT Dashboard – Inversiones</h1>
+      </div>
+      <div class="actions">
+        <span class="badge" title="Dataset activo"><span class="badge-dot"></span><span id="datasetBadge">data/</span></span>
+        <label class="small" for="datasetSelect">Dataset:</label>
+        <select id="datasetSelect" class="dataset" title="Elegí la fuente de datos">
+          <option value="data/">Actual</option>
+          <option value="data/q1/">Q1</option>
+          <option value="data/q2/">Q2</option>
+        </select>
+        <button id="reloadBtn" class="reload" title="Recargar datos">⟳ Recargar datos</button>
+        <button id="themeToggle" class="tbtn" aria-pressed="false" title="Cambiar tema">
+          <span class="ticon" id="iconDark" aria-hidden="true" style="display:none">🌙</span>
+          <span class="ticon" id="iconLight" aria-hidden="true" style="display:inline">☀️</span>
+          <span id="themeLabel">Light</span>
+        </button>
+        <div class="meta">Q1 2025 · Paleta: #003f5c → #ffa600</div>
+      </div>
+    </div>
+
+    <!-- KPIs principales -->
+    <div class="grid two" style="margin-top:var(--sp-3)">
+      <div class="kpi"><span class="badge" style="background:var(--kpi-bad)"></span><div><p class="kpi-title">CSAT actual</p><p class="kpi-value">−73%</p></div></div>
+      <div class="kpi"><span class="badge" style="background:var(--c7)"></span><div><p class="kpi-title">Comentarios analizados</p><p class="kpi-value" id="kpiComentarios">—</p></div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="Vistas del dashboard">
+      <div class="tablist">
+        <button class="tab" role="tab" aria-selected="true" aria-controls="panel-sankey" id="tab-sankey">Sankey CSAT → UX</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-pareto" id="tab-pareto">Pareto de categorías</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-barras" id="tab-barras">Barras apiladas</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-office" id="tab-office">CSAT Office</button>
+      </div>
+
+      <div class="panels">
+        <!-- Panel 1: Sankey -->
+        <section class="panel active" id="panel-sankey" role="tabpanel" aria-labelledby="tab-sankey">
+          <h2 style="margin-top:0">Flujo de comentarios → Acciones UX</h2>
+          <canvas id="chartSankey" height="420"></canvas>
+          <p class="note">Fuente actual: <code id="noteSankeyPath">data/sankey.json</code></p>
+          <div id="statusSankey" class="status"></div>
+        </section>
+
+        <!-- Panel 2: Pareto -->
+        <section class="panel" id="panel-pareto" role="tabpanel" aria-labelledby="tab-pareto">
+          <h2 style="margin-top:0">Pareto de categorías</h2>
+          <canvas id="chartPareto" height="380"></canvas>
+          <p class="note">Fuente actual: <code id="noteParetoPath">data/pareto.csv</code> (headers: categoria,conteo).</p>
+          <div id="statusPareto" class="status"></div>
+        </section>
+
+        <!-- Panel 3: Barras apiladas -->
+        <section class="panel" id="panel-barras" role="tabpanel" aria-labelledby="tab-barras">
+          <h2 style="margin-top:0">Barras apiladas por severidad</h2>
+          <canvas id="chartStacked" height="380"></canvas>
+          <p class="note">Fuente actual: <code id="noteStackedPath">data/stacked.json</code> (labels, alta, media, baja).</p>
+          <div id="statusStacked" class="status"></div>
+        </section>
+
+        <!-- Panel 4: CSAT Office (línea temporal) -->
+        <section class="panel" id="panel-office" role="tabpanel" aria-labelledby="tab-office">
+          <h2 style="margin-top:0">CSAT Office (evolución mensual)</h2>
+          <canvas id="chartOffice" height="380"></canvas>
+          <p class="note">Fuente actual: <code id="noteOfficePath">data/csat_office.csv</code> (headers: <code>date,value</code>). % entre −100 y 100.</p>
+          <div id="statusOffice" class="status"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // ====== Paleta ======
+      const PALETTE = ['#003f5c','#2f4b7c','#665191','#a05195','#d45087','#f95d6a','#ff7c43','#ffa600'];
+
+      // ====== Theme & UI elements ======
+      const rootHtml = document.documentElement;
+      const themeBtn   = document.getElementById('themeToggle');
+      const iconDark   = document.getElementById('iconDark');
+      const iconLight  = document.getElementById('iconLight');
+      const themeLabel = document.getElementById('themeLabel');
+      const reloadBtn  = document.getElementById('reloadBtn');
+      const dsSelect   = document.getElementById('datasetSelect');
+      const dsBadge    = document.getElementById('datasetBadge');
+
+      const noteSankey = document.getElementById('noteSankeyPath');
+      const notePareto = document.getElementById('noteParetoPath');
+      const noteStacked= document.getElementById('noteStackedPath');
+      const noteOffice = document.getElementById('noteOfficePath');
+
+      const statusEls = {
+        sankey: document.getElementById('statusSankey'),
+        pareto: document.getElementById('statusPareto'),
+        stacked: document.getElementById('statusStacked'),
+        office: document.getElementById('statusOffice')
+      };
+
+      function setStatus(which, ok, msg){
+        const el = statusEls[which]; if(!el) return;
+        el.className = 'status ' + (ok? 'ok':'warn');
+        el.textContent = msg;
+      }
+
+      function getTextColor(){
+        return getComputedStyle(rootHtml).getPropertyValue('--text').trim();
+      }
+      function getGridColor(){
+        const theme = rootHtml.getAttribute('data-theme');
+        return theme === 'light' ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.06)';
+      }
+      function applyThemeUi(){
+        const theme = rootHtml.getAttribute('data-theme');
+        if(theme === 'light'){
+          iconDark.style.display='inline';
+          iconLight.style.display='none';
+          themeLabel.textContent='Dark';
+        }else{
+          iconDark.style.display='none';
+          iconLight.style.display='inline';
+          themeLabel.textContent='Light';
+        }
+      }
+
+      function updateNotes(base){
+        if(noteSankey) noteSankey.textContent = base + 'sankey.json';
+        if(notePareto) notePareto.textContent = base + 'pareto.csv';
+        if(noteStacked)noteStacked.textContent= base + 'stacked.json';
+        if(noteOffice) noteOffice.textContent = base + 'csat_office.csv';
+        if(dsBadge) dsBadge.textContent = base;
+      }
+
+      // ====== Tabs ======
+      const tabs = document.querySelectorAll('.tab');
+      const panels = document.querySelectorAll('.panel');
+      tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.setAttribute('aria-selected','false'));
+        t.setAttribute('aria-selected','true');
+        panels.forEach(p => p.classList.remove('active'));
+        document.getElementById(t.getAttribute('aria-controls')).classList.add('active');
+      }));
+
+      // ====== CSV robusto (soporta comas y comillas) ======
+      function parseCSV(text){
+        const lines = text.trim().split(/\r?\n/);
+        const headers = lines.shift().split(',').map(h=>h.trim());
+        function splitCSVLine(line){
+          const cols = []; let cur = ''; let inQuotes = false;
+          for(let i=0;i<line.length;i++){
+            const ch = line[i];
+            if(ch === '"'){
+              if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; } else { inQuotes = !inQuotes; }
+            } else if(ch === ',' && !inQuotes){ cols.push(cur); cur=''; }
+            else { cur += ch; }
+          }
+          cols.push(cur); return cols;
+        }
+        return lines.map(line=>{
+          const cols = splitCSVLine(line).map(c=>c.trim());
+          const obj = {}; headers.forEach((h,i)=>{
+            const v = (cols[i] ?? '').trim();
+            obj[h] = (h.toLowerCase()==='conteo' || h.toLowerCase()==='value')? Number(v) : v;
+          });
+          return obj;
+        });
+      }
+
+      // ====== Cache-busting ======
+      function bust(path){
+        const sep = path.includes('?') ? '&' : '?';
+        return path + sep + 'v=' + Date.now();
+      }
+
+      // ====== Fetch utils ======
+      async function fetchJSON(path, fallback, statusKey){
+        try{ const res = await fetch(bust(path), {cache:'no-store'}); if(!res.ok) throw new Error(res.statusText); const data = await res.json(); setStatus(statusKey,true,'Fuente cargada'); return data; }
+        catch(e){ console.warn(`JSON fallback → ${path}`, e); setStatus(statusKey,false,'Usando fallback (no se encontró la fuente)'); return fallback; }
+      }
+      async function fetchCSV(path, fallback, statusKey){
+        try{ const res = await fetch(bust(path), {cache:'no-store'}); if(!res.ok) throw new Error(res.statusText); const text = await res.text(); const data = parseCSV(text); setStatus(statusKey,true,'Fuente cargada'); return data; }
+        catch(e){ console.warn(`CSV fallback → ${path}`, e); setStatus(statusKey,false,'Usando fallback (no se encontró la fuente)'); return fallback; }
+      }
+
+      // ====== Dataset base (selector) ======
+      let datasetBase = localStorage.getItem('datasetBase') || 'data/';
+      if(!/^(data\/(q1|q2)\/|data\/$)/.test(datasetBase)) datasetBase = 'data/';
+      dsSelect.value = datasetBase;
+      updateNotes(datasetBase);
+
+      // ====== Fallbacks (modelo) ======
+      const FALLBACK_SANKEY = { commentsTotal: 87, flows: [
+        { from:'CSAT (87)', to:'Estabilidad', flow:25 },
+        { from:'CSAT (87)', to:'Rentabilidad', flow:20 },
+        { from:'CSAT (87)', to:'Movimientos', flow:15 },
+        { from:'CSAT (87)', to:'Autorizaciones', flow:12 },
+        { from:'CSAT (87)', to:'Operaciones', flow:10 },
+        { from:'CSAT (87)', to:'Otros', flow:5 },
+        { from:'Estabilidad', to:'Alta severidad', flow:10 },
+        { from:'Rentabilidad', to:'Alta severidad', flow:8 },
+        { from:'Movimientos', to:'Media severidad', flow:7 },
+        { from:'Autorizaciones', to:'Media severidad', flow:5 },
+        { from:'Operaciones', to:'Baja severidad', flow:4 },
+        { from:'Otros', to:'Baja severidad', flow:3 },
+        { from:'Alta severidad', to:'Escala a Iniciativa', flow:12 },
+        { from:'Media severidad', to:'Revisión menor', flow:8 },
+        { from:'Baja severidad', to:'Sin acción', flow:5 },
+        { from:'Escala a Iniciativa', to:'Rediseño', flow:7 },
+        { from:'Escala a Iniciativa', to:'Mejora de flujo', flow:5 },
+        { from:'Escala a Iniciativa', to:'Ajuste de comunicación', flow:3 },
+        { from:'Rediseño', to:'EQC (instancia de calidad)', flow:5 }
+      ]};
+      const FALLBACK_PARETO = [
+        {categoria:'Estabilidad', conteo:25},
+        {categoria:'Rentabilidad', conteo:20},
+        {categoria:'Movimientos', conteo:15},
+        {categoria:'Autorizaciones', conteo:12},
+        {categoria:'Operaciones', conteo:10},
+        {categoria:'Otros', conteo:5}
+      ];
+      const FALLBACK_STACKED = { labels: ['Estabilidad','Rentabilidad','Movimientos','Autorizaciones','Operaciones','Otros'], alta:[10,8,0,0,0,0], media:[0,0,7,5,0,0], baja:[0,0,0,0,4,3] };
+      const FALLBACK_OFFICE = [
+        {date:'2024-09-01', value:-0.59}, {date:'2024-10-01', value:-0.589}, {date:'2024-11-01', value:-0.593}, {date:'2024-12-01', value:-0.476},
+        {date:'2025-01-01', value:-0.386}, {date:'2025-02-01', value:-0.292}, {date:'2025-03-01', value:-0.090}, {date:'2025-04-01', value:-0.031},
+        {date:'2025-05-01', value:-0.178}, {date:'2025-06-01', value: 0.097}, {date:'2025-07-01', value: 0.177}, {date:'2025-08-01', value: 0.211},
+        {date:'2025-09-01', value: 0.197}, {date:'2025-10-01', value: 0.172}
+      ];
+
+      // ====== Estado de charts (para actualizar sin refrescar) ======
+      let charts = { sankey:null, pareto:null, stacked:null, office:null };
+
+      async function loadData(){
+        const [sankeyData, paretoRows, stackedData, officeRows] = await Promise.all([
+          fetchJSON(datasetBase + 'sankey.json', FALLBACK_SANKEY, 'sankey'),
+          fetchCSV(datasetBase + 'pareto.csv', FALLBACK_PARETO, 'pareto'),
+          fetchJSON(datasetBase + 'stacked.json', FALLBACK_STACKED, 'stacked'),
+          fetchCSV(datasetBase + 'csat_office.csv', FALLBACK_OFFICE, 'office')
+        ]);
+        return {sankeyData, paretoRows, stackedData, officeRows};
+      }
+
+      function upsertCharts({sankeyData, paretoRows, stackedData, officeRows}){
+        // KPI
+        const k = document.getElementById('kpiComentarios');
+        if(sankeyData && sankeyData.commentsTotal && k){ k.textContent = sankeyData.commentsTotal; }
+
+        // Sankey
+        if(!charts.sankey){
+          charts.sankey = new Chart(document.getElementById('chartSankey'), {
+            type: 'sankey',
+            data: { datasets: [{ data: (sankeyData.flows||[]), colorFrom: PALETTE, colorTo: PALETTE, borderColor:getGridColor(), borderWidth:1, colorMode:'gradient' }]},
+            options: { plugins:{ legend:{display:false}, title:{display:false} } }
+          });
+        } else {
+          charts.sankey.data.datasets[0].data = (sankeyData.flows||[]);
+          charts.sankey.data.datasets[0].borderColor = getGridColor();
+          charts.sankey.update();
+        }
+
+        // Pareto
+        const sorted = [...paretoRows].sort((a,b)=> Number(b.conteo)-Number(a.conteo));
+        const labelsSorted = sorted.map(r=>r.categoria);
+        const valuesSorted = sorted.map(r=>Number(r.conteo)||0);
+        const total = valuesSorted.reduce((a,b)=>a+b,0) || 1;
+        const cumulative = valuesSorted.reduce((acc,v)=>{ const last=acc.length?acc[acc.length-1]:0; acc.push(last+v); return acc; },[]).map(v=>v/total*100);
+
+        if(!charts.pareto){
+          charts.pareto = new Chart(document.getElementById('chartPareto'), {
+            type: 'bar',
+            data: {
+              labels: labelsSorted,
+              datasets: [
+                { type:'bar', label:'Menciones', data: valuesSorted, backgroundColor: PALETTE.map((c,i)=>PALETTE[i%PALETTE.length]) },
+                { type:'line', label:'% acumulado', data: cumulative, yAxisID:'y1', borderColor:'#ffa600', tension:.25 }
+              ]
+            },
+            options: {
+              scales:{
+                x:{ ticks:{color:getTextColor()}, grid:{color:getGridColor()} },
+                y:{ beginAtZero:true, grid:{color:getGridColor()}, ticks:{color:getTextColor()} },
+                y1:{ position:'right', min:0, max:100, grid:{display:false}, ticks:{ color:getTextColor(), callback:v=>v+'%' } }
+              },
+              plugins:{ legend:{labels:{color:getTextColor()}}, tooltip:{mode:'index'} }
+            }
+          });
+        } else {
+          charts.pareto.data.labels = labelsSorted;
+          charts.pareto.data.datasets[0].data = valuesSorted;
+          charts.pareto.data.datasets[1].data = cumulative;
+          charts.pareto.options.scales.x.ticks.color = getTextColor();
+          charts.pareto.options.scales.x.grid.color = getGridColor();
+          charts.pareto.options.scales.y.ticks.color = getTextColor();
+          charts.pareto.options.scales.y.grid.color = getGridColor();
+          charts.pareto.options.scales.y1.ticks.color = getTextColor();
+          charts.pareto.update();
+        }
+
+        // Stacked
+        if(!charts.stacked){
+          charts.stacked = new Chart(document.getElementById('chartStacked'), {
+            type: 'bar',
+            data: {
+              labels: stackedData.labels,
+              datasets: [
+                { label:'Alta',  data:stackedData.alta,  backgroundColor:'#d45087' },
+                { label:'Media', data:stackedData.media, backgroundColor:'#ff7c43' },
+                { label:'Baja',  data:stackedData.baja,  backgroundColor:'#ffa600' }
+              ]
+            },
+            options: {
+              responsive:true,
+              scales:{ x:{ stacked:true, ticks:{color:getTextColor()}, grid:{color:getGridColor()} }, y:{ stacked:true, beginAtZero:true, ticks:{color:getTextColor()}, grid:{color:getGridColor()} } },
+              plugins:{ legend:{labels:{color:getTextColor()}} }
+            }
+          });
+        } else {
+          charts.stacked.data.labels = stackedData.labels;
+          charts.stacked.data.datasets[0].data = stackedData.alta;
+          charts.stacked.data.datasets[1].data = stackedData.media;
+          charts.stacked.data.datasets[2].data = stackedData.baja;
+          charts.stacked.update();
+        }
+
+        // CSAT Office (línea)
+        const officeLabels = officeRows.map(r=> new Date(r.date));
+        const officeValues = officeRows.map(r=> Number(r.value));
+        if(!charts.office){
+          charts.office = new Chart(document.getElementById('chartOffice'), {
+            type: 'line',
+            data: { labels: officeLabels, datasets: [{ label:'CanalOFBNuevo', data: officeValues, borderColor:'#2f4b7c', pointRadius:3, tension:.25 }] },
+            options: {
+              scales:{
+                x:{ type:'time', time:{unit:'month'}, ticks:{color:getTextColor()}, grid:{color:getGridColor()} },
+                y:{ beginAtZero:false, ticks:{ callback:v=> (v*100).toFixed(0)+'%', color:getTextColor() }, grid:{color:getGridColor()} }
+              },
+              plugins:{ legend:{labels:{color:getTextColor()}}, tooltip:{ callbacks:{ label:(ctx)=> `${(ctx.parsed.y*100).toFixed(1)}%` } } }
+            }
+          });
+        } else {
+          charts.office.data.labels = officeLabels;
+          charts.office.data.datasets[0].data = officeValues;
+          charts.office.update();
+        }
+      }
+
+      function updateChartsTheme(){
+        const text = getTextColor();
+        const grid = getGridColor();
+        if(charts.pareto){
+          charts.pareto.options.scales.x.ticks.color = text; charts.pareto.options.scales.x.grid.color = grid;
+          charts.pareto.options.scales.y.ticks.color = text; charts.pareto.options.scales.y.grid.color = grid;
+          charts.pareto.options.scales.y1.ticks.color = text; charts.pareto.options.plugins.legend.labels.color = text; charts.pareto.update();
+        }
+        if(charts.stacked){
+          charts.stacked.options.scales.x.ticks.color = text; charts.stacked.options.scales.x.grid.color = grid;
+          charts.stacked.options.scales.y.ticks.color = text; charts.stacked.options.scales.y.grid.color = grid;
+          charts.stacked.options.plugins.legend.labels.color = text; charts.stacked.update();
+        }
+        if(charts.sankey){ charts.sankey.data.datasets[0].borderColor = grid; charts.sankey.update(); }
+        if(charts.office){
+          charts.office.options.scales.x.ticks.color = text; charts.office.options.scales.x.grid.color = grid;
+          charts.office.options.scales.y.ticks.color = text; charts.office.options.scales.y.grid.color = grid; charts.office.update();
+        }
+      }
+
+      // ====== Init: cargar y dibujar ======
+      loadData().then(upsertCharts);
+
+      // ====== Theme toggle ======
+      const stored = localStorage.getItem('theme');
+      if(stored === 'light' || stored === 'dark'){ rootHtml.setAttribute('data-theme', stored); }
+      applyThemeUi(); updateChartsTheme();
+      themeBtn.addEventListener('click', () => {
+        const current = rootHtml.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        rootHtml.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        applyThemeUi(); updateChartsTheme();
+      });
+
+      // ====== Dataset selector ======
+      dsSelect.addEventListener('change', async () => {
+        datasetBase = dsSelect.value;
+        localStorage.setItem('datasetBase', datasetBase);
+        updateNotes(datasetBase);
+        reloadBtn.click();
+      });
+
+      // ====== Recargar datos sin refrescar ======
+      reloadBtn.addEventListener('click', async () => {
+        try{
+          reloadBtn.disabled = true;
+          const label = reloadBtn.textContent;
+          reloadBtn.textContent = '⟳ Recargando…';
+          const data = await loadData();
+          upsertCharts(data);
+          updateChartsTheme();
+          reloadBtn.textContent = label;
+        }catch(err){
+          console.error('Error recargando datos', err);
+          reloadBtn.textContent = 'Error. Reintentar';
+        }finally{
+          reloadBtn.disabled = false;
+        }
+      });
+
+      // ====== Tests mínimos ======
+      console.assert(document.getElementById('chartSankey'), 'Canvas Sankey no encontrado');
+    });
+  </script>
+
+  <!-- 
+    Estructura esperada por dataset (base seleccionada, p.ej. data/q1/)
+      ├─ sankey.json
+      ├─ pareto.csv         (categoria,conteo)
+      ├─ stacked.json       (labels, alta, media, baja)
+      └─ csat_office.csv    (date,value)
+  -->
+</body>
+</html>
