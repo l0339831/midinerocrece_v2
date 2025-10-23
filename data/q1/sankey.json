@@ -68,17 +68,17 @@
     },
     {
       "from": "Asesoramiento, Recomendaciones",
-      "to": "Alta severidad",
+      "to": "Baja severidad",
       "flow": 40
     },
     {
       "from": "Alta severidad",
       "to": "Escala a Iniciativa",
-      "flow": 2
+      "flow": 4
     },
     {
       "from": "Baja severidad",
-      "to": "Sin acción",
+      "to": "No tiene iniciativa aún",
       "flow": 1
     },
     {
@@ -89,7 +89,7 @@
     {
       "from": "Escala a Iniciativa",
       "to": "Mejora de flujo",
-      "flow": 5
+      "flow": 2
     },
     {
       "from": "Escala a Iniciativa",
@@ -99,7 +99,12 @@
     {
       "from": "Rediseño",
       "to": "EQC (instancia de calidad)",
-      "flow": 2
+      "flow": 1
+    }
+        {
+      "from": "Ajuste de comunicación",
+      "to": "EQC (instancia de calidad)",
+      "flow": 1
     }
   ]
 }
