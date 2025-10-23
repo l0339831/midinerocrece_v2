@@ -48,18 +48,18 @@
     },
     {
       "from": "Movimientos, Extractos, Historiales",
-      "to": "Media severidad",
-      "flow": 7
+      "to": "Alta severidad",
+      "flow": 17
     },
     {
       "from": "FIMA 24/7",
-      "to": "Alta severidad",
-      "flow": 1
+      "to": "Baja severidad",
+      "flow": 30
     }, 
     {
       "from": "Autorizaciones",
-      "to": "Media severidad",
-      "flow": 5
+      "to": "Alta severidad",
+      "flow": 30
     },
     {
       "from": "Operaciones (Suscripc, Rescate, CV, Programar)",
@@ -68,8 +68,8 @@
     },
     {
       "from": "Asesoramiento, Recomendaciones",
-      "to": "Baja severidad",
-      "flow": 1
+      "to": "Alta severidad",
+      "flow": 40
     },
     {
       "from": "Alta severidad",
