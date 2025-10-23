@@ -77,11 +77,6 @@
       "flow": 2
     },
     {
-      "from": "Media severidad",
-      "to": "Revisión menor",
-      "flow": 3
-    },
-    {
       "from": "Baja severidad",
       "to": "Sin acción",
       "flow": 1
