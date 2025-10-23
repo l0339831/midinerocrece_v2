@@ -7,7 +7,6 @@
   <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.0/dist/chartjs-chart-sankey.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   
   <!-- Estilos (tokens + utilitarios + temas) -->
   <style>
@@ -119,7 +118,6 @@
         <button class="tab" role="tab" aria-selected="true" aria-controls="panel-sankey" id="tab-sankey">Sankey CSAT → UX</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="panel-pareto" id="tab-pareto">Pareto de categorías</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="panel-barras" id="tab-barras">Barras apiladas</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-office" id="tab-office">CSAT Office</button>
       </div>
 
       <div class="panels">
@@ -146,14 +144,6 @@
           <p class="note">Fuente actual: <code id="noteStackedPath">data/stacked.json</code> (labels, alta, media, baja).</p>
           <div id="statusStacked" class="status"></div>
         </section>
-
-        <!-- Panel 4: CSAT Office (línea temporal) -->
-        <section class="panel" id="panel-office" role="tabpanel" aria-labelledby="tab-office">
-          <h2 style="margin-top:0">CSAT Office (evolución mensual)</h2>
-          <canvas id="chartOffice" height="380"></canvas>
-          <p class="note">Fuente actual: <code id="noteOfficePath">data/csat_office.csv</code> (headers: <code>date,value</code>). % entre −100 y 100.</p>
-          <div id="statusOffice" class="status"></div>
-        </section>
       </div>
     </div>
   </div>
@@ -176,13 +166,11 @@
       const noteSankey = document.getElementById('noteSankeyPath');
       const notePareto = document.getElementById('noteParetoPath');
       const noteStacked= document.getElementById('noteStackedPath');
-      const noteOffice = document.getElementById('noteOfficePath');
 
       const statusEls = {
         sankey: document.getElementById('statusSankey'),
         pareto: document.getElementById('statusPareto'),
-        stacked: document.getElementById('statusStacked'),
-        office: document.getElementById('statusOffice')
+        stacked: document.getElementById('statusStacked')
       };
 
       function setStatus(which, ok, msg){
@@ -215,7 +203,6 @@
         if(noteSankey) noteSankey.textContent = base + 'sankey.json';
         if(notePareto) notePareto.textContent = base + 'pareto.csv';
         if(noteStacked)noteStacked.textContent= base + 'stacked.json';
-        if(noteOffice) noteOffice.textContent = base + 'csat_office.csv';
         if(dsBadge) dsBadge.textContent = base;
       }
 
@@ -248,7 +235,7 @@
           const cols = splitCSVLine(line).map(c=>c.trim());
           const obj = {}; headers.forEach((h,i)=>{
             const v = (cols[i] ?? '').trim();
-            obj[h] = (h.toLowerCase()==='conteo' || h.toLowerCase()==='value')? Number(v) : v;
+            obj[h] = (h.toLowerCase()==='conteo')? Number(v) : v;
           });
           return obj;
         });
@@ -307,27 +294,20 @@
         {categoria:'Otros', conteo:5}
       ];
       const FALLBACK_STACKED = { labels: ['Estabilidad','Rentabilidad','Movimientos','Autorizaciones','Operaciones','Otros'], alta:[10,8,0,0,0,0], media:[0,0,7,5,0,0], baja:[0,0,0,0,4,3] };
-      const FALLBACK_OFFICE = [
-        {date:'2024-09-01', value:-0.59}, {date:'2024-10-01', value:-0.589}, {date:'2024-11-01', value:-0.593}, {date:'2024-12-01', value:-0.476},
-        {date:'2025-01-01', value:-0.386}, {date:'2025-02-01', value:-0.292}, {date:'2025-03-01', value:-0.090}, {date:'2025-04-01', value:-0.031},
-        {date:'2025-05-01', value:-0.178}, {date:'2025-06-01', value: 0.097}, {date:'2025-07-01', value: 0.177}, {date:'2025-08-01', value: 0.211},
-        {date:'2025-09-01', value: 0.197}, {date:'2025-10-01', value: 0.172}
-      ];
 
       // ====== Estado de charts (para actualizar sin refrescar) ======
-      let charts = { sankey:null, pareto:null, stacked:null, office:null };
+      let charts = { sankey:null, pareto:null, stacked:null };
 
       async function loadData(){
-        const [sankeyData, paretoRows, stackedData, officeRows] = await Promise.all([
+        const [sankeyData, paretoRows, stackedData] = await Promise.all([
           fetchJSON(datasetBase + 'sankey.json', FALLBACK_SANKEY, 'sankey'),
           fetchCSV(datasetBase + 'pareto.csv', FALLBACK_PARETO, 'pareto'),
-          fetchJSON(datasetBase + 'stacked.json', FALLBACK_STACKED, 'stacked'),
-          fetchCSV(datasetBase + 'csat_office.csv', FALLBACK_OFFICE, 'office')
+          fetchJSON(datasetBase + 'stacked.json', FALLBACK_STACKED, 'stacked')
         ]);
-        return {sankeyData, paretoRows, stackedData, officeRows};
+        return {sankeyData, paretoRows, stackedData};
       }
 
-      function upsertCharts({sankeyData, paretoRows, stackedData, officeRows}){
+      function upsertCharts({sankeyData, paretoRows, stackedData}){
         // KPI
         const k = document.getElementById('kpiComentarios');
         if(sankeyData && sankeyData.commentsTotal && k){ k.textContent = sankeyData.commentsTotal; }
@@ -408,27 +388,6 @@
           charts.stacked.data.datasets[2].data = stackedData.baja;
           charts.stacked.update();
         }
-
-        // CSAT Office (línea)
-        const officeLabels = officeRows.map(r=> new Date(r.date));
-        const officeValues = officeRows.map(r=> Number(r.value));
-        if(!charts.office){
-          charts.office = new Chart(document.getElementById('chartOffice'), {
-            type: 'line',
-            data: { labels: officeLabels, datasets: [{ label:'CanalOFBNuevo', data: officeValues, borderColor:'#2f4b7c', pointRadius:3, tension:.25 }] },
-            options: {
-              scales:{
-                x:{ type:'time', time:{unit:'month'}, ticks:{color:getTextColor()}, grid:{color:getGridColor()} },
-                y:{ beginAtZero:false, ticks:{ callback:v=> (v*100).toFixed(0)+'%', color:getTextColor() }, grid:{color:getGridColor()} }
-              },
-              plugins:{ legend:{labels:{color:getTextColor()}}, tooltip:{ callbacks:{ label:(ctx)=> `${(ctx.parsed.y*100).toFixed(1)}%` } } }
-            }
-          });
-        } else {
-          charts.office.data.labels = officeLabels;
-          charts.office.data.datasets[0].data = officeValues;
-          charts.office.update();
-        }
       }
 
       function updateChartsTheme(){
@@ -445,10 +404,6 @@
           charts.stacked.options.plugins.legend.labels.color = text; charts.stacked.update();
         }
         if(charts.sankey){ charts.sankey.data.datasets[0].borderColor = grid; charts.sankey.update(); }
-        if(charts.office){
-          charts.office.options.scales.x.ticks.color = text; charts.office.options.scales.x.grid.color = grid;
-          charts.office.options.scales.y.ticks.color = text; charts.office.options.scales.y.grid.color = grid; charts.office.update();
-        }
       }
 
       // ====== Init: cargar y dibujar ======
@@ -501,8 +456,7 @@
     Estructura esperada por dataset (base seleccionada, p.ej. data/q1/)
       ├─ sankey.json
       ├─ pareto.csv         (categoria,conteo)
-      ├─ stacked.json       (labels, alta, media, baja)
-      └─ csat_office.csv    (date,value)
+      └─ stacked.json       (labels, alta, media, baja)
   -->
 </body>
 </html>
