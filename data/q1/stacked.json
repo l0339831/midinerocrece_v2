@@ -1,0 +1,34 @@
+{
+  "labels": [
+    "Estabilidad",
+    "Rentabilidad",
+    "Movimientos",
+    "Autorizaciones",
+    "Operaciones",
+    "Otros"
+  ],
+  "alta": [
+    10,
+    8,
+    0,
+    0,
+    0,
+    0
+  ],
+  "media": [
+    0,
+    0,
+    7,
+    5,
+    0,
+    0
+  ],
+  "baja": [
+    0,
+    0,
+    0,
+    0,
+    4,
+    3
+  ]
+}
