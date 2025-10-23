@@ -4,17 +4,17 @@
     {
       "from": "CSAT (87)",
       "to": "Estabilidad",
-      "flow": 25
+      "flow": 24
     },
     {
       "from": "CSAT (87)",
-      "to": "Rentabilidad",
+      "to": "Rendimientos, Rentabilidad, Información",
       "flow": 20
     },
     {
       "from": "CSAT (87)",
-      "to": "Movimientos",
-      "flow": 15
+      "to": "Movimientos, Extractos, Historiales",
+      "flow": 12
     },
     {
       "from": "CSAT (87)",
@@ -23,13 +23,18 @@
     },
     {
       "from": "CSAT (87)",
-      "to": "Operaciones",
+      "to": "Operaciones (Suscripc, Rescate, CV, Programar)",
       "flow": 10
     },
     {
       "from": "CSAT (87)",
-      "to": "Otros",
-      "flow": 5
+      "to": "FIMA 24/7",
+      "flow": 4
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Asesoramiento, Recomendaciones",
+      "flow": 4
     },
     {
       "from": "Estabilidad",
@@ -37,49 +42,54 @@
       "flow": 10
     },
     {
-      "from": "Rentabilidad",
+      "from": "Rendimientos, Rentabilidad, Información",
       "to": "Alta severidad",
       "flow": 8
     },
     {
-      "from": "Movimientos",
+      "from": "Movimientos, Extractos, Historiales",
       "to": "Media severidad",
       "flow": 7
     },
+    {
+      "from": "FIMA 24/7",
+      "to": "Alta severidad",
+      "flow": 7
+    }, 
     {
       "from": "Autorizaciones",
       "to": "Media severidad",
       "flow": 5
     },
     {
-      "from": "Operaciones",
+      "from": "Operaciones (Suscripc, Rescate, CV, Programar)",
       "to": "Baja severidad",
       "flow": 4
     },
     {
-      "from": "Otros",
+      "from": "Asesoramiento, Recomendaciones",
       "to": "Baja severidad",
-      "flow": 3
+      "flow": 1
     },
     {
       "from": "Alta severidad",
       "to": "Escala a Iniciativa",
-      "flow": 12
+      "flow": 2
     },
     {
       "from": "Media severidad",
       "to": "Revisión menor",
-      "flow": 8
+      "flow": 3
     },
     {
       "from": "Baja severidad",
       "to": "Sin acción",
-      "flow": 5
+      "flow": 1
     },
     {
       "from": "Escala a Iniciativa",
       "to": "Rediseño",
-      "flow": 7
+      "flow": 2
     },
     {
       "from": "Escala a Iniciativa",
@@ -89,12 +99,12 @@
     {
       "from": "Escala a Iniciativa",
       "to": "Ajuste de comunicación",
-      "flow": 3
+      "flow": 1
     },
     {
       "from": "Rediseño",
       "to": "EQC (instancia de calidad)",
-      "flow": 5
+      "flow": 2
     }
   ]
 }
