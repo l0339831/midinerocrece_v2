@@ -1,0 +1,100 @@
+{
+  "commentsTotal": 87,
+  "flows": [
+    {
+      "from": "CSAT (87)",
+      "to": "Estabilidad",
+      "flow": 25
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Rentabilidad",
+      "flow": 20
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Movimientos",
+      "flow": 15
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Autorizaciones",
+      "flow": 12
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Operaciones",
+      "flow": 10
+    },
+    {
+      "from": "CSAT (87)",
+      "to": "Otros",
+      "flow": 5
+    },
+    {
+      "from": "Estabilidad",
+      "to": "Alta severidad",
+      "flow": 10
+    },
+    {
+      "from": "Rentabilidad",
+      "to": "Alta severidad",
+      "flow": 8
+    },
+    {
+      "from": "Movimientos",
+      "to": "Media severidad",
+      "flow": 7
+    },
+    {
+      "from": "Autorizaciones",
+      "to": "Media severidad",
+      "flow": 5
+    },
+    {
+      "from": "Operaciones",
+      "to": "Baja severidad",
+      "flow": 4
+    },
+    {
+      "from": "Otros",
+      "to": "Baja severidad",
+      "flow": 3
+    },
+    {
+      "from": "Alta severidad",
+      "to": "Escala a Iniciativa",
+      "flow": 12
+    },
+    {
+      "from": "Media severidad",
+      "to": "Revisión menor",
+      "flow": 8
+    },
+    {
+      "from": "Baja severidad",
+      "to": "Sin acción",
+      "flow": 5
+    },
+    {
+      "from": "Escala a Iniciativa",
+      "to": "Rediseño",
+      "flow": 7
+    },
+    {
+      "from": "Escala a Iniciativa",
+      "to": "Mejora de flujo",
+      "flow": 5
+    },
+    {
+      "from": "Escala a Iniciativa",
+      "to": "Ajuste de comunicación",
+      "flow": 3
+    },
+    {
+      "from": "Rediseño",
+      "to": "EQC (instancia de calidad)",
+      "flow": 5
+    }
+  ]
+}
