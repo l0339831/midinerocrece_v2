@@ -44,7 +44,7 @@
     {
       "from": "Rendimientos, Rentabilidad, Información",
       "to": "Alta severidad",
-      "flow": 8
+      "flow": 1
     },
     {
       "from": "Movimientos, Extractos, Historiales",
@@ -54,7 +54,7 @@
     {
       "from": "FIMA 24/7",
       "to": "Alta severidad",
-      "flow": 7
+      "flow": 1
     }, 
     {
       "from": "Autorizaciones",
