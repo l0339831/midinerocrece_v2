@@ -100,8 +100,8 @@
       "from": "Rediseño",
       "to": "EQC (instancia de calidad)",
       "flow": 1
-    }
-        {
+    },
+    {
       "from": "Ajuste de comunicación",
       "to": "EQC (instancia de calidad)",
       "flow": 1
