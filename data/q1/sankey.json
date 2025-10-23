@@ -39,7 +39,7 @@
     {
       "from": "Estabilidad",
       "to": "Alta severidad",
-      "flow": 10
+      "flow": 7
     },
     {
       "from": "Rendimientos, Rentabilidad, Información",
@@ -49,17 +49,17 @@
     {
       "from": "Movimientos, Extractos, Historiales",
       "to": "Alta severidad",
-      "flow": 17
+      "flow": 2
     },
     {
       "from": "FIMA 24/7",
       "to": "Baja severidad",
-      "flow": 30
+      "flow": 1
     }, 
     {
       "from": "Autorizaciones",
       "to": "Alta severidad",
-      "flow": 30
+      "flow": 1
     },
     {
       "from": "Operaciones (Suscripc, Rescate, CV, Programar)",
@@ -69,7 +69,7 @@
     {
       "from": "Asesoramiento, Recomendaciones",
       "to": "Baja severidad",
-      "flow": 40
+      "flow": 9
     },
     {
       "from": "Alta severidad",
